@@ -1,107 +1,147 @@
-# -*- coding: utf-8 -*-
-
+import pandas as pd
 import requests
 import xml.etree.ElementTree as ET
+import re
 
 class SidraApiClient:
     """
-    Cliente para interagir com a API SIDRA do IBGE.
-    Responsável por buscar e processar os dados da API.
+    Cliente para interagir com a API do SIDRA para obter dados de tabelas.
     """
 
-    def __init__(self, api_url):
+    def __init__(self, table_query: any):
         """
-        Construtor.
-        :param api_url: A URL completa da consulta da API SIDRA.
-        """
-        self.url = api_url
+        Inicializa o cliente da API do SIDRA.
 
-    def fetch_and_parse(self):
+        :param table_query: O código da tabela (int) ou a URL completa da API do SIDRA (str).
         """
-        Busca os dados da URL e os processa.
-        :return: Uma tupla contendo (dados_de_lookup, info_cabecalho) ou lança uma exceção em caso de erro.
-        """
-        xml_data = self._fetch_raw_data()
-        if not xml_data:
-            raise ValueError("Não foram recebidos dados XML válidos da API.")
-        
-        return self._parse_xml(xml_data)
-
-    def _fetch_raw_data(self):
-        """
-        Realiza a requisição HTTP para a API.
-        """
-        try:
-            headers = {'Accept': 'application/xml, text/xml'}
-            response = requests.get(self.url, timeout=120, headers=headers)
-
-            if response.status_code == 200:
-                response.encoding = 'utf-8'
-                response_text = response.text.strip()
-                
-                if response_text.startswith('<'):
-                    return response_text
-                else:
-                    raise ConnectionError("A API não retornou XML, mesmo após ser solicitado.")
+        self.full_query_url = None
+        if isinstance(table_query, str) and table_query.startswith('http'):
+            # Se uma URL completa for fornecida, armazena-a.
+            self.full_query_url = table_query
+            match = re.search(r'/t/(\d+)', table_query)
+            if match:
+                self.table_code = int(match.group(1))
             else:
-                response_text = response.text
-                if "excedeu o limite" in response_text.lower():
-                    raise ValueError("A consulta é muito grande e excedeu o limite de 50.000 valores da API.")
-                else:
-                    raise ConnectionError(f"Erro de requisição: {response.status_code} ({response.reason}).")
+                raise ValueError(f"Não foi possível extrair o código da tabela da URL: {table_query}")
+        else:
+            # Caso contrário, trata como um código de tabela.
+            self.table_code = int(table_query)
 
-        except requests.exceptions.RequestException as e:
-            raise ConnectionError(f"Ocorreu um erro de conexão ao tentar acessar a API: {e}")
+        self.base_url = f"https://apisidra.ibge.gov.br/values/t/{self.table_code}"
 
-    def _parse_xml(self, xml_data):
+
+    def fetch_and_parse(self, params: dict = None) -> pd.DataFrame:
         """
-        Processa a string XML para extrair os dados e o cabeçalho.
-        """
-        parser = ET.XMLParser(encoding="utf-8")
-        root = ET.fromstring(xml_data.encode('utf-8'), parser=parser)
-        
-        ns = {'ibge': 'http://schemas.datacontract.org/2004/07/IBGE.BTE.Tabela'}
-        all_nodes = root.findall('.//ibge:ValorDescritoPorSuasDimensoes', ns)
-        
-        if not all_nodes:
-            raise ValueError("Nenhum dado encontrado no XML (tag 'ValorDescritoPorSuasDimensoes').")
+        Busca e analisa dados da API do SIDRA com base nos parâmetros fornecidos.
 
-        header_node = all_nodes[0]
-        data_rows_nodes = all_nodes[1:]
-        header_map = {child.tag.split('}')[-1]: child.text for child in header_node}
+        :param params: Um dicionário de parâmetros para a consulta da API (ignorado se uma URL completa foi usada na inicialização).
+        :return: Um DataFrame do pandas contendo os dados.
+        """
+        # Se uma URL completa foi fornecida na inicialização, use-a diretamente.
+        if self.full_query_url:
+            final_url = self.full_query_url
+        else:
+            # Caso contrário, construa a URL a partir dos parâmetros.
+            if params is None:
+                params = {}
+            
+            sanitized_params = {k: str(v).replace(" ", "") for k, v in params.items()}
+
+            final_url = self.base_url
+            if sanitized_params:
+                path_params = "/".join([f"{k}/{v}" for k, v in sanitized_params.items()])
+                final_url = f"{self.base_url}/{path_params}"
+
+        response = requests.get(final_url)
+        response.raise_for_status()  # Lança um erro para respostas com status ruins
         
-        geo_code_field = None
-        for i in range(1, 10):
-            dim_code, dim_name = f'D{i}C', f'D{i}N'
-            if header_map.get(dim_name) and any(k in header_map[dim_name].lower() for k in ['município', 'unidade da federação']):
-                geo_code_field = dim_code
+        # O SIDRA retorna XML quando o formato não é especificado
+        if response.headers.get('Content-Type', '').startswith('application/xml'):
+            return self._parse_xml(response.text)
+        
+        # Assume JSON para outros casos (embora o padrão seja XML)
+        data = response.json()
+        if not data or len(data) <= 1:
+            return pd.DataFrame()
+        
+        header = data[0]
+        rows = data[1:]
+        
+        df = pd.DataFrame(rows, columns=header.values())
+        return df
+
+    def _parse_xml(self, xml_string: str) -> pd.DataFrame:
+        """
+        Analisa uma string XML da resposta da API do SIDRA e a converte em um DataFrame.
+
+        :param xml_string: A string XML a ser analisada.
+        :return: Um DataFrame do pandas contendo os dados analisados.
+        """
+        root = ET.fromstring(xml_string)
+        
+        namespace = {'ns': 'http://schemas.datacontract.org/2004/07/IBGE.BTE.Tabela'}
+        all_rows = []
+        
+        header_element = root.find('ns:ValorDescritoPorSuasDimensoes', namespace)
+        if header_element is None:
+            return pd.DataFrame()
+
+        header_map = {child.tag.split('}')[-1]: child.text for child in header_element}
+        
+        data_elements = root.findall('ns:ValorDescritoPorSuasDimensoes', namespace)[1:]
+        
+        for elem in data_elements:
+            row_data = {header_map[child.tag.split('}')[-1]]: child.text for child in elem}
+            all_rows.append(row_data)
+            
+        if not all_rows:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(all_rows)
+
+        # Identifica a coluna de código geográfico dinamicamente
+        geo_code_col = None
+        
+        # Lista abrangente de todos os níveis territoriais do IBGE para garantir a detecção
+        niveis_geograficos = [
+            'brasil',
+            'grande região',
+            'unidade da federação',
+            'região metropolitana',
+            'região integrada de desenvolvimento',
+            'microrregião geográfica',
+            'mesorregião geográfica',
+            'região geográfica imediata',
+            'região geográfica intermediária',
+            'município',
+            'distrito',
+            'subdistrito',
+            'bairro',
+            'setor censitário'
+        ]
+
+        for i in range(1, 10): # Verifica as dimensões de D1 a D9
+            dim_name = f'D{i}N'
+            dim_code = f'D{i}C'
+
+            # Verifica se o nome da dimensão corresponde a algum nível geográfico conhecido
+            if header_map.get(dim_name) and any(k in header_map[dim_name].lower() for k in niveis_geograficos):
+                geo_code_col = header_map.get(dim_code)
                 break
-        
-        if not geo_code_field:
-            raise ValueError("Não foi possível identificar a coluna de código geográfico no cabeçalho do XML.")
-        
-        data_rows = [{child.tag.split('}')[-1]: child.text for child in node} for node in data_rows_nodes]
-        if not data_rows:
-            return {}, header_map # Retorna dados vazios mas com cabeçalho se a consulta for válida mas sem resultados
 
-        lookup = {}
-        for row in data_rows:
-            geo_code = row.get(geo_code_field)
-            value = row.get('V')
-            if geo_code and value and value.strip() not in ['...', '-']:
-                normalized_sidra_key = str(geo_code).strip()
-                if normalized_sidra_key not in lookup:
-                    lookup[normalized_sidra_key] = {}
-                
-                class_key_parts = []
-                for i in range(1, 10):
-                    class_name_field = f'D{i}N'
-                    if class_name_field in header_map and header_map[class_name_field] and f'D{i}C' != geo_code_field:
-                         class_name = row.get(class_name_field)
-                         if class_name:
-                            class_key_parts.append(class_name)
-                
-                class_key = " ".join(class_key_parts) if class_key_parts else header_map.get('D2N', 'Valor')
-                lookup[normalized_sidra_key][class_key] = value
+        if geo_code_col is None:
+            raise ValueError("Erro: Não foi possível identificar a coluna de código geográfico no cabeçalho do XML.")
         
-        return lookup, header_map
+        # Renomeia a coluna de código geográfico para um nome padrão para facilitar a junção
+        if geo_code_col in df.columns:
+            df.rename(columns={geo_code_col: 'geo_code'}, inplace=True)
+        
+        # --- INÍCIO DA MODIFICAÇÃO ---
+        # Adiciona um log de depuração para mostrar a estrutura do DataFrame retornado.
+        # Isto ajuda a depurar erros de "unpacking" no código que chama esta função.
+        print("--- Depuração SidraApiClient: DataFrame Criado ---")
+        print(df.head())
+        print("-------------------------------------------------")
+        # --- FIM DA MODIFICAÇÃO ---
+
+        return df
