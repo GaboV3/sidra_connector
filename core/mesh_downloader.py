@@ -16,7 +16,7 @@ def fetch_available_years():
     try:
         # A URL base contém as pastas de cada ano, ex: 'municipio_2020/'
         url = constants.IBGE_MESH_BASE_URL_PARENT
-        response = requests.get(url, timeout=20)
+        response = requests.get(url, timeout=constants.API_TIMEOUT)
         response.raise_for_status()
         
         # Usa uma expressão regular para encontrar links que correspondem ao padrão de pasta de ano
@@ -56,14 +56,14 @@ class MeshDownloader:
         try:
             zip_path = os.path.join(self.temp_dir_path, 'download.zip')
             
-            response = requests.get(self.url, stream=True, timeout=300)
+            response = requests.get(self.url, stream=True, timeout=constants.DOWNLOAD_TIMEOUT)
             response.raise_for_status()
             
             total_size = int(response.headers.get('content-length', 0))
             bytes_downloaded = 0
 
             with open(zip_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
+                for chunk in response.iter_content(chunk_size=constants.CHUNK_SIZE):
                     f.write(chunk)
                     bytes_downloaded += len(chunk)
                     if progress_callback and total_size > 0:

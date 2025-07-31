@@ -62,9 +62,20 @@ class FetchSidraDataTask(QgsTask):
         try:
             client = SidraApiClient(self.url)
             self.sidra_data, self.header_info = client.fetch_and_parse()
+            
+            # Log adicional para debug
+            if isinstance(self.sidra_data, dict):
+                QgsMessageLog.logMessage(f'Dados recebidos: {len(self.sidra_data)} registros', 'SIDRA Connector', Qgis.Info)
+                if len(self.sidra_data) > 0:
+                    sample_keys = list(self.sidra_data.keys())[:3]
+                    QgsMessageLog.logMessage(f'Códigos geográficos de exemplo: {sample_keys}', 'SIDRA Connector', Qgis.Info)
+            else:
+                QgsMessageLog.logMessage(f'Dados recebidos têm tipo incorreto: {type(self.sidra_data)}', 'SIDRA Connector', Qgis.Warning)
+            
             return True
         except Exception as e:
             self.exception = str(e)
+            QgsMessageLog.logMessage(f'Erro na busca de dados: {e}', 'SIDRA Connector', Qgis.Critical)
             return False
 
     def finished(self, result):

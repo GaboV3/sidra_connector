@@ -27,10 +27,22 @@ class DataJoiner:
         if not isinstance(target_layer, QgsVectorLayer):
             raise TypeError("O parâmetro 'target_layer' não é uma camada vetorial válida.")
         
+        if not target_layer.isValid():
+            raise ValueError("A camada vetorial fornecida não é válida.")
+            
+        if not join_field_name or join_field_name not in [field.name() for field in target_layer.fields()]:
+            raise ValueError(f"Campo de união '{join_field_name}' não encontrado na camada.")
+        
+        if not isinstance(sidra_data, dict):
+            raise TypeError("Os dados do SIDRA devem ser fornecidos como um dicionário.")
+            
+        if not sidra_data:
+            raise ValueError(f"Nenhum dado do SIDRA foi fornecido. Verifique se a URL da API está correta e retorna dados válidos.")
+        
         self.target_layer = target_layer
         self.join_field_name = join_field_name
         self.sidra_data = sidra_data
-        self.header_info = header_info
+        self.header_info = header_info if header_info else {}
 
     def join_data(self):
         """
@@ -44,9 +56,32 @@ class DataJoiner:
         all_class_values = sorted(list(set(k for item in self.sidra_data.values() for k in item.keys())))
         period = self.header_info.get('D3N', 'periodo')
         field_map = {}
+        used_field_names = set()
+        
         for class_value in all_class_values:
-            safe_class = str(class_value).lower().replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')
-            field_name = f"sidra_{safe_class[:20]}_{period}"
+            # Criar nome mais descritivo e único
+            safe_class = str(class_value).lower()
+            # Remover caracteres especiais mas manter mais informação
+            safe_class = safe_class.replace(' - ', '_').replace(' ', '_').replace('/', '_')
+            safe_class = safe_class.replace('(', '').replace(')', '').replace('-', '_')
+            
+            # Aumentar limite para 40 caracteres (limite do QGIS é ~63)
+            base_name = safe_class[:40]
+            field_name = f"{base_name}"
+            
+            # Garantir que o nome é único
+            counter = 1
+            original_field_name = field_name
+            while field_name in used_field_names:
+                field_name = f"{original_field_name}_{counter}"
+                counter += 1
+            
+            # Garantir que não excede limite do QGIS (63 caracteres)
+            if len(field_name) > 60:
+                field_name = field_name[:60]
+            
+            used_field_names.add(field_name)
+            
             if new_fields.indexFromName(field_name) == -1:
                 new_fields.append(QgsField(field_name, QVariant.Double))
             field_map[class_value] = field_name

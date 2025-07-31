@@ -120,8 +120,21 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
         target_layer = self.cb_target_layer.currentData()
         join_field = self.cb_target_field.currentText()
 
-        if not api_url or not target_layer or not join_field:
-            self.iface.messageBar().pushMessage("Erro", "URL da API, camada alvo e campo de união devem ser preenchidos.", level=Qgis.Critical)
+        # Validações de entrada
+        if not api_url:
+            self.iface.messageBar().pushMessage("Erro", "URL da API deve ser preenchida.", level=Qgis.Critical)
+            return
+            
+        if not api_url.startswith(('http://', 'https://')):
+            self.iface.messageBar().pushMessage("Erro", "URL deve começar com http:// ou https://", level=Qgis.Critical)
+            return
+            
+        if not target_layer:
+            self.iface.messageBar().pushMessage("Erro", "Camada alvo deve ser selecionada.", level=Qgis.Critical)
+            return
+            
+        if not join_field:
+            self.iface.messageBar().pushMessage("Erro", "Campo de união deve ser selecionado.", level=Qgis.Critical)
             return
 
         self.iface.messageBar().pushMessage("SIDRA Connector", "Buscando dados na API...", level=Qgis.Info, duration=5)
@@ -130,6 +143,25 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
     def on_fetch_success(self, sidra_data, header_info):
         """Callback de sucesso para a busca de dados."""
         self.iface.messageBar().pushMessage("SIDRA Connector", "Dados recebidos. Processando e unindo...", level=Qgis.Info)
+        
+        # Validação adicional dos dados recebidos
+        if not sidra_data or not isinstance(sidra_data, dict):
+            self.iface.messageBar().pushMessage(
+                "Erro", 
+                "A API não retornou dados válidos. Verifique se a URL está correta e se contém dados para o período/localização especificados.", 
+                level=Qgis.Critical, 
+                duration=10
+            )
+            return
+        
+        if len(sidra_data) == 0:
+            self.iface.messageBar().pushMessage(
+                "Aviso", 
+                "A API retornou dados vazios. Verifique se a URL da API está correta e se há dados disponíveis para os parâmetros especificados.", 
+                level=Qgis.Warning, 
+                duration=10
+            )
+            return
         
         target_layer = self.cb_target_layer.currentData()
         join_field = self.cb_target_field.currentText()
@@ -143,7 +175,7 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
             if join_count > 0:
                 self.iface.messageBar().pushMessage("Sucesso", f"Cópia da camada criada com {join_count} feições unidas!", Qgis.Success)
             else:
-                sidra_keys_sample = list(sidra_data.keys())[:5]
+                sidra_keys_sample = list(sidra_data.keys())[:5] if sidra_data else []
                 self.iface.messageBar().pushMessage(
                     "Aviso", 
                     f"Nenhuma correspondência encontrada. Verifique o formato dos códigos. "
@@ -152,6 +184,10 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
                     level=Qgis.Warning, 
                     duration=20
                 )
+        except ValueError as e:
+            self.iface.messageBar().pushMessage("Erro de Validação", f"Dados inválidos: {e}", Qgis.Critical)
+        except TypeError as e:
+            self.iface.messageBar().pushMessage("Erro de Tipo", f"Erro no processamento dos dados: {e}", Qgis.Critical)
         except Exception as e:
             self.iface.messageBar().pushMessage("Erro", f"Falha no processamento ou união: {e}", Qgis.Critical)
 

@@ -31,3 +31,9 @@ IBGE_MESH_BASE_URL_PARENT = "https://geoftp.ibge.gov.br/organizacao_do_territori
 
 # URL base para download das malhas do IBGE (com placeholder para o ano)
 IBGE_MESH_BASE_URL = IBGE_MESH_BASE_URL_PARENT + "municipio_{ano}/"
+
+# Configurações de rede e performance
+API_TIMEOUT = 30  # Timeout em segundos para requisições à API
+DOWNLOAD_TIMEOUT = 300  # Timeout em segundos para downloads
+MAX_RETRIES = 3  # Número máximo de tentativas
+CHUNK_SIZE = 8192  # Tamanho do chunk para downloads em bytes
