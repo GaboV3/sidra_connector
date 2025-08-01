@@ -13,14 +13,6 @@ Este projeto visa otimizar o fluxo de trabalho de análise geoespacial, eliminan
 *   **União de Dados:** Vincule os dados estatísticos baixados do SIDRA com as camadas vetoriais correspondentes de forma automática.
 *   **Gerenciamento de Camadas:** Adicione as novas camadas (com os dados já vinculados) diretamente ao seu projeto QGIS.
 
-## Instalação
-
-1.  Baixe o arquivo `.zip` da versão mais recente na [página de Releases](https://github.com/GaboV3/sidra_connector/releases) do projeto.
-2.  Abra o QGIS.
-3.  Vá para o menu `Complementos > Gerenciar e Instalar Complementos...`.
-4.  Na aba `Instalar a partir de um arquivo ZIP`, selecione o arquivo baixado e clique em `Instalar Complemento`.
-5.  Após a instalação, o ícone do SIDRA Connector aparecerá na sua barra de ferramentas.
-
 ## Contribuições
 
 Contribuições são bem-vindas! Se você encontrar um bug ou tiver uma sugestão, por favor, abra uma [issue](https://github.com/GaboV3/sidra_connector/issues).
