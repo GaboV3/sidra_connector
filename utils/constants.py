@@ -4,7 +4,6 @@
 Ficheiro para armazenar constantes usadas em todo o plugin.
 """
 
-# Dicionário de Unidades da Federação
 UFS = {
     "Brasil": "BR", "Acre": "AC", "Alagoas": "AL", "Amapá": "AP", 
     "Amazonas": "AM", "Bahia": "BA", "Ceará": "CE", "Distrito Federal": "DF", 
@@ -16,7 +15,6 @@ UFS = {
     "Sergipe": "SE", "Tocantins": "TO"
 }
 
-# Dicionário de tipos de malhas territoriais
 MALHAS = {
     "Municípios": "Municipios",
     "Unidades da Federação": "UF",
@@ -26,14 +24,12 @@ MALHAS = {
     "País": "Pais"
 }
 
-# URL "pai" que contém as pastas dos anos
 IBGE_MESH_BASE_URL_PARENT = "https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/"
 
-# URL base para download das malhas do IBGE (com placeholder para o ano)
 IBGE_MESH_BASE_URL = IBGE_MESH_BASE_URL_PARENT + "municipio_{ano}/"
 
 # Configurações de rede e performance
-API_TIMEOUT = 30  # Timeout em segundos para requisições à API
-DOWNLOAD_TIMEOUT = 300  # Timeout em segundos para downloads
-MAX_RETRIES = 3  # Número máximo de tentativas
-CHUNK_SIZE = 8192  # Tamanho do chunk para downloads em bytes
+API_TIMEOUT = 30
+DOWNLOAD_TIMEOUT = 300  
+MAX_RETRIES = 3  
+CHUNK_SIZE = 65536

@@ -22,16 +22,14 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
         
         self.iface = iface
 
-        # Conexões dos sinais e slots
         self.cb_target_layer.aboutToShowPopup.connect(self.populate_layers_combobox)
         self.cb_target_layer.currentIndexChanged.connect(self.on_layer_selection_changed)
         self.btn_download_malha.clicked.connect(self.handle_download_mesh)
         self.btn_fetch_join.clicked.connect(self.handle_fetch_and_join)
         
-        # Inicialização da UI
         self.populate_malha_comboboxes()
         self.populate_layers_combobox()
-        self.on_layer_selection_changed() # Garante o estado inicial correto dos botões e campos
+        self.on_layer_selection_changed()
 
     def populate_malha_comboboxes(self):
         """

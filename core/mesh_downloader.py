@@ -14,19 +14,15 @@ def fetch_available_years():
     :return: Uma lista de strings com os anos, ordenada do mais recente para o mais antigo.
     """
     try:
-        # A URL base contém as pastas de cada ano, ex: 'municipio_2020/'
         url = constants.IBGE_MESH_BASE_URL_PARENT
         response = requests.get(url, timeout=constants.API_TIMEOUT)
         response.raise_for_status()
         
-        # Usa uma expressão regular para encontrar links que correspondem ao padrão de pasta de ano
-        # Ex: <a href="municipio_2020/">municipio_2020/</a>
         year_folders = re.findall(r'href="municipio_(\d{4})/"', response.text)
         
         if not year_folders:
             raise ValueError("Nenhuma pasta de ano encontrada na página do IBGE.")
             
-        # Converte para inteiros para ordenação e depois de volta para string
         years = sorted([int(y) for y in year_folders], reverse=True)
         return [str(y) for y in years]
 
@@ -92,5 +88,4 @@ class MeshDownloader:
             if self.temp_dir_path and os.path.exists(self.temp_dir_path):
                 shutil.rmtree(self.temp_dir_path)
         except Exception:
-            # Logar o erro seria uma boa prática aqui
             pass

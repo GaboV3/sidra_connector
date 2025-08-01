@@ -59,13 +59,10 @@ class DataJoiner:
         used_field_names = set()
         
         for class_value in all_class_values:
-            # Criar nome mais descritivo e único
             safe_class = str(class_value).lower()
-            # Remover caracteres especiais mas manter mais informação
             safe_class = safe_class.replace(' - ', '_').replace(' ', '_').replace('/', '_')
             safe_class = safe_class.replace('(', '').replace(')', '').replace('-', '_')
             
-            # Aumentar limite para 40 caracteres (limite do QGIS é ~63)
             base_name = safe_class[:40]
             field_name = f"{base_name}"
             
@@ -126,7 +123,7 @@ class DataJoiner:
                             try:
                                 new_feat[field_name] = float(data_value)
                             except (ValueError, TypeError):
-                                pass # Deixa o campo nulo se o valor não for conversível
+                                pass
                 elif normalized_layer_key and len(unmatched_keys_sample) < 5:
                     unmatched_keys_sample.append(normalized_layer_key)
                 

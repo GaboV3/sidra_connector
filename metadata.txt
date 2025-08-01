@@ -5,15 +5,15 @@
 [general]
 name=SIDRA Connector
 qgisMinimumVersion=3.0
-description=Um plugin para buscar dados da API SIDRA do IBGE e uni-los a camadas vetoriais.
-version=0.1
+description=Um plugin para buscar unir dados da API SIDRA do IBGE com camadas vetoriais.
+version=1.0
 author=Gabriel Henrique Angelo
 email=angelo.henrique.gabriel@gmail.com
 
-about=Um plugin para buscar dados da API SIDRA do IBGE e uni-los a camadas vetoriais.
+about=Um plugin para buscar unir dados da API SIDRA do IBGE com camadas vetoriais.
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://github.com/GaboV3/sidra_connector/issues
+repository=https://github.com/GaboV3/sidra_connector
 # End of mandatory metadata
 
 # Recommended items:
@@ -25,11 +25,11 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=python
 
-homepage=http://homepage
+homepage=https://github.com/GaboV3/sidra_connector
 category=Plugins
 icon=icon.png
 # experimental flag
-experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False

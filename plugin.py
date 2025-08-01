@@ -45,8 +45,6 @@ class SidraConnector:
         """
         Executa o diálogo do plugin. Cria uma nova instância se necessário.
         """
-        # Sempre crie um novo diálogo para evitar estado antigo
         self.dialog = SidraConnectorDialog(self.iface)
         self.dialog.show()
-        # O resultado da execução é tratado dentro da própria classe de diálogo
         self.dialog.exec_()

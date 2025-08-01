@@ -7,7 +7,6 @@ from ..core.sidra_api_client import SidraApiClient
 from ..core.mesh_downloader import MeshDownloader, fetch_available_years
 from .layer_manager import load_vector_layer, add_layer_to_project
 
-# Lista global para manter o controle de tarefas ativas
 active_tasks = []
 
 def cancel_all_tasks():
@@ -123,7 +122,6 @@ class DownloadAndLoadLayerTask(QgsTask):
         if self in active_tasks:
             active_tasks.remove(self)
         
-        # A limpeza é feita independentemente do sucesso ou falha
         if self.downloader:
             self.downloader.cleanup()
 
