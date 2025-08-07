@@ -12,6 +12,7 @@ Este projeto visa otimizar o fluxo de trabalho de análise geoespacial, eliminan
 *   **Download de Malhas Vetoriais:** Baixe malhas territoriais (municípios, estados, etc.) do IBGE em diferentes formatos e resoluções.
 *   **União de Dados:** Vincule os dados estatísticos baixados do SIDRA com as camadas vetoriais correspondentes de forma automática.
 
+<<<<<<< HEAD
 ## Como Usar
 
 1.  **Abra o Plugin:** Clique no ícone do SIDRA Connector para abrir a janela principal.
@@ -35,6 +36,8 @@ Este projeto visa otimizar o fluxo de trabalho de análise geoespacial, eliminan
 8.  **Selecionar Camada:** Escolha uma camada vetorial já carregada no seu projeto.
 9.  **Executar União:** Clique em "Buscar e Unir Dados" para processar e criar a nova camada com os dados unidos.
 
+=======
+>>>>>>> e1b3be2902d48c4ad153cbfa42506314dfa5eac1
 ## Contribuições
 
 Contribuições são bem-vindas! Se você encontrar um bug ou tiver uma sugestão, por favor, abra uma [issue](https://github.com/GaboV3/sidra_connector/issues).
