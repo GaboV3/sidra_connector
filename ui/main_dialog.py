@@ -4,6 +4,7 @@ from qgis.core import Qgis, QgsVectorLayer
 from qgis.PyQt import QtWidgets
 
 from .main_dialog_base_ui import Ui_SidraConnectorDialogBase
+from .query_builder_dialog import QueryBuilderDialog
 from ..gis import layer_manager, task_manager
 from ..core.data_joiner import DataJoiner
 from ..utils import constants
@@ -13,7 +14,7 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
     Lógica da janela de diálogo principal do plugin.
     """
 
-    def __init__(self, iface, parent=None):
+    def __init__(self, iface, plugin_dir, parent=None):
         """
         Construtor da janela de diálogo.
         """
@@ -21,6 +22,12 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
         self.setupUi(self)
         
         self.iface = iface
+        self.plugin_dir = plugin_dir
+
+        # Adicionar botão do assistente de busca
+        self.btn_query_builder = QtWidgets.QPushButton("Montar API / Buscar Tabela...")
+        self.verticalLayout_2.insertWidget(2, self.btn_query_builder)
+        self.btn_query_builder.clicked.connect(self.open_query_builder)
 
         self.cb_target_layer.aboutToShowPopup.connect(self.populate_layers_combobox)
         self.cb_target_layer.currentIndexChanged.connect(self.on_layer_selection_changed)
@@ -192,4 +199,21 @@ class SidraConnectorDialog(QtWidgets.QDialog, Ui_SidraConnectorDialogBase):
     def on_fetch_error(self, error_message):
         """Callback de erro para a busca de dados."""
         self.iface.messageBar().pushMessage("Erro na API", f"Ocorreu um erro: {error_message}", level=Qgis.Critical, duration=10)
+
+    def open_query_builder(self):
+        """
+        Abre o assistente de busca de tabelas do SIDRA.
+        """
+        dialog = QueryBuilderDialog(self.plugin_dir, self)
+        
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            generated_url = dialog.get_generated_url()
+            if generated_url:
+                self.le_api_url.setText(generated_url)
+                self.iface.messageBar().pushMessage(
+                    "SIDRA Connector", 
+                    "URL da API inserida com sucesso. Agora selecione uma camada e clique em 'Buscar e Unir Dados'.", 
+                    level=Qgis.Info, 
+                    duration=5
+                )
 
